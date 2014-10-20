@@ -12,7 +12,7 @@ open:
 autocompile:
 	@cd "$(CLIENT_PATH)" && \
 	rm -rf target; \
-	lein with-profile dev,srcmap cljsbuild auto $(CLJSBUILD)
+	lein with-profile dev cljsbuild auto $(CLJSBUILD)
 
 dist:
 	@cd "$(CLIENT_PATH)" && \
