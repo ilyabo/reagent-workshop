@@ -5,9 +5,15 @@
 (enable-console-print!)
 
 
-(defn main-view []
-  [:div "Hello world!"])
+(def app-state
+  (reagent/atom {
+     :message "Hello, world!"
+     }))
 
+
+(defn main-view []
+  [:div {:className "greeting"}
+   (:message @app-state)])
 
 
 (defn ^:export run []
