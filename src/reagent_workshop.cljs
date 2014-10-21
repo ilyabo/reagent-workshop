@@ -6,55 +6,66 @@
 
 
 ; Constants
-
-(def SIZE 9)
-(def WIDTH 40)
+(def WIDTH 500)
 (def KEYS {37 :left 38 :up 39 :right 40 :down})
 
 
 ; Helpers
 
-(defn pos-x [ci]
-  (* (rem ci SIZE) WIDTH))
+(defn pos-x [ci size w]
+  (* (rem ci size) w))
 
-(defn pos-y [ci]
-  (* (quot ci SIZE) WIDTH))
+(defn pos-y [ci size w]
+  (* (quot ci size) w))
 
 
 
 ; App state
 
+(let [size 9]
+
 (def app-state
-  (reagent/atom {
-      :bug (quot (* SIZE SIZE) 2)
-      :fruit nil
-      :score 0}))
+ (reagent/atom
+   {
+     :size  size
+     :bug   nil
+     :fruit nil
+     :score 0 })))
 
 
 (defn spawn-new-fruit! []
-  (swap! app-state
-         assoc :fruit (rand-int (* SIZE SIZE))))
+  (let [size (:size @app-state)]
+    (swap! app-state
+          assoc :fruit (rand-int (* size size)))))
 
-(defn can-move [pos direction]
+(defn initial-positions! []
+  (let [size (:size @app-state)]
+    (swap! app-state
+           assoc :bug (quot (* size size) 2))
+    (spawn-new-fruit!)))
+
+
+(defn can-move [pos direction size]
   (case direction
-    :up    (>= pos SIZE)
-    :down  (< (quot pos SIZE) (dec SIZE))
-    :left  (> (rem pos SIZE) 0)
-    :right (< (rem pos SIZE) (dec SIZE))))
+    :up    (>= pos size)
+    :down  (< (quot pos size) (dec size))
+    :left  (> (rem pos size) 0)
+    :right (< (rem pos size) (dec size))))
 
 (defn move [pos direction]
-  (if (can-move pos direction)
-    (+ pos (direction {:up    (- SIZE)
-                      :down  SIZE
-                      :left  -1
-                      :right +1}))
-    pos))
+  (let [size (:size @app-state)]
+    (if (can-move pos direction size)
+     (+ pos (direction {:up    (- size)
+                        :down  size
+                        :left  -1
+                        :right +1}))
+     pos)))
 
 (defn inc-score! []
   (swap! app-state
          update-in [:score] inc))
 
-(defn move-bug! [direction]
+(defn update-bug-position! [direction]
   (swap! app-state
          assoc :bug (-> (:bug @app-state) (move direction)))
 
@@ -63,32 +74,45 @@
       (spawn-new-fruit!)
       (inc-score!))))
 
+(defn update-size! [size]
+  (swap! app-state
+         assoc :size size)
+  (initial-positions!))
+
+
+; Events
+
+(defn on-key-down [evt]
+  (if-let [key (KEYS (.-keyCode evt))] (update-bug-position! key)))
+
+(defn on-resize [evt]
+  (update-size! (-> evt .-target .-value js/parseInt)))
 
 
 
 ; Views
 
-(defn fruit [ci]
-  (let [m  (/ WIDTH 2)
-        cx (+ (pos-x ci) m)
-        cy (+ (pos-y ci) m)]
+(defn fruit [ci size w]
+  (let [m  (/ w 2)
+        cx (+ (pos-x ci size w) m)
+        cy (+ (pos-y ci size w) m)]
     [:circle
       {:className "fruit"
-       :width     WIDTH
-       :height    WIDTH
+       :width     w
+       :height    w
        :cx        cx
        :cy        cy
        :r         (dec m)}]))
 
 
-(defn bug [ci]
-  (let [m  (/ WIDTH 2)
-        cx (+ (pos-x ci) m)
-        cy (+ (pos-y ci) m)]
+(defn bug [ci size w]
+  (let [m  (/ w 2)
+        cx (+ (pos-x ci size w) m)
+        cy (+ (pos-y ci size w) m)]
     [:circle
       {:className "bug"
-       :width     WIDTH
-       :height    WIDTH
+       :width     w
+       :height    w
        :cx        cx
        :cy        cy
        :r         (- m 3)
@@ -96,32 +120,42 @@
       }]))
 
 
-(defn cell [ci & {:keys [has-bug has-fruit]}]
+(defn cell [ci size w & {:keys [has-bug has-fruit]}]
   [:g { :className "cell" }
 
    [:rect {
       :className "cell-rect"
-      :width     WIDTH
-      :height    WIDTH
-      :x         (pos-x ci)
-      :y         (pos-y ci)} ]
+      :width     w
+      :height    w
+      :x         (pos-x ci size w)
+      :y         (pos-y ci size w)} ]
 
-   (if has-fruit (fruit ci))
+   (if has-fruit [fruit ci size w])
 
-   (if has-bug (bug ci))])
+   (if has-bug [bug ci size w])])
 
 
-(defn field [bug fruit]
+(defn field [bug fruit size w]
   [:svg {:className "field"
-         :width (* SIZE WIDTH)
-         :height (* SIZE WIDTH)}
+         :width (* size w)
+         :height (* size w)}
 
-   (for [ci (range (* SIZE SIZE))]
+   (for [ci (range (* size size))]
       ^{:key ci}
-       (cell ci
+       [cell ci size w
              :has-fruit (= ci fruit)
-             :has-bug (= ci bug) ))])
+             :has-bug (= ci bug)] )])
 
+
+(defn resize-view [size]
+  [:div {:className "resize-view"}
+   "Field size: "
+   [:input {:type "range"
+            :min 3
+            :max 30
+            :value size
+            :on-change on-resize
+   }]])
 
 (defn score-view [score]
   [:div {:className "score-view"}
@@ -129,17 +163,16 @@
 
 (defn main-view []
   [:div {:className "app" }
+   [resize-view (:size @app-state)]
    [field
     (:bug @app-state)
-    (:fruit @app-state)]
+    (:fruit @app-state)
+    (:size @app-state)
+    (/ WIDTH (:size @app-state))]
    [score-view (:score @app-state)]])
-
-
-(defn on-key-down [evt]
-  (if-let [key (KEYS (.-keyCode evt))] (move-bug! key)))
 
 
 (defn ^:export run []
   (reagent/render-component [main-view] (.-body js/document))
-  (spawn-new-fruit!)
+  (initial-positions!)
   (js/addEventListener "keydown" on-key-down))
