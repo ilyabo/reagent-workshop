@@ -37,7 +37,7 @@
 
 (defn can-move [pos direction]
   (case direction
-    :up    (> pos SIZE)
+    :up    (>= pos SIZE)
     :down  (< (quot pos SIZE) (dec SIZE))
     :left  (> (rem pos SIZE) 0)
     :right (< (rem pos SIZE) (dec SIZE))))
