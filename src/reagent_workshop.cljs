@@ -27,7 +27,8 @@
 (def app-state
   (reagent/atom {
       :bug (quot (* SIZE SIZE) 2)
-      :fruit nil }))
+      :fruit nil
+      :score 0}))
 
 
 (defn spawn-new-fruit! []
@@ -49,12 +50,20 @@
                       :right +1}))
     pos))
 
+(defn inc-score! []
+  (swap! app-state
+         update-in [:score] inc))
+
 (defn move-bug! [direction]
   (swap! app-state
          assoc :bug (-> (:bug @app-state) (move direction)))
 
   (if (= (:bug @app-state) (:fruit @app-state))
-    (spawn-new-fruit!)))
+    (do
+      (spawn-new-fruit!)
+      (inc-score!))))
+
+
 
 
 ; Views
@@ -114,11 +123,16 @@
              :has-bug (= ci bug) ))])
 
 
+(defn score-view [score]
+  [:div {:className "score-view"}
+   (str "Score: " score)])
+
 (defn main-view []
   [:div {:className "app" }
    [field
     (:bug @app-state)
-    (:fruit @app-state)]])
+    (:fruit @app-state)]
+   [score-view (:score @app-state)]])
 
 
 (defn on-key-down [evt]
