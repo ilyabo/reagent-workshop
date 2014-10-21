@@ -7,19 +7,18 @@
 
 ; Constants
 
-(def FIELD-SIZE 25)
-(def NUM-CELLS (* FIELD-SIZE FIELD-SIZE))
-(def CELL-SIZE 20)
+(def SIZE 25)
+(def WIDTH 20)
 (def KEYS {37 :left 38 :up 39 :right 40 :down})
 
 
 ; Helpers
 
 (defn pos-x [ci]
-  (* (rem ci FIELD-SIZE) CELL-SIZE))
+  (* (rem ci SIZE) WIDTH))
 
 (defn pos-y [ci]
-  (* (quot ci FIELD-SIZE) CELL-SIZE))
+  (* (quot ci SIZE) WIDTH))
 
 
 
@@ -27,49 +26,60 @@
 
 (def app-state
   (reagent/atom {
-      :bug (quot NUM-CELLS 2)
+      :bug (quot (* SIZE SIZE) 2)
       :fruit nil }))
 
 
 (defn spawn-new-fruit! []
   (swap! app-state
-         assoc :fruit (rand-int NUM-CELLS)))
+         assoc :fruit (rand-int (* SIZE SIZE))))
 
+(defn can-move [pos direction]
+  (case direction
+    :up    (> pos SIZE)
+    :down  (< (quot pos SIZE) (dec SIZE))
+    :left  (> (rem pos SIZE) 0)
+    :right (< (rem pos SIZE) (dec SIZE))))
 
-(defn move-pos [direction pos]
-  (+ pos (direction {:up   (- FIELD-SIZE)
-                    :down  FIELD-SIZE
-                    :left  -1
-                    :right +1})))
+(defn move [pos direction]
+  (if (can-move pos direction)
+    (+ pos (direction {:up    (- SIZE)
+                      :down  SIZE
+                      :left  -1
+                      :right +1}))
+    pos))
 
 (defn move-bug! [direction]
   (swap! app-state
-         assoc :bug (move-pos direction (:bug @app-state))))
+         assoc :bug (-> (:bug @app-state) (move direction)))
+
+  (if (= (:bug @app-state) (:fruit @app-state))
+    (spawn-new-fruit!)))
 
 
 ; Views
 
 (defn fruit [ci]
-  (let [m  (/ CELL-SIZE 2)
+  (let [m  (/ WIDTH 2)
         cx (+ (pos-x ci) m)
         cy (+ (pos-y ci) m)]
     [:circle
       {:className "fruit"
-       :width     CELL-SIZE
-       :height    CELL-SIZE
+       :width     WIDTH
+       :height    WIDTH
        :cx        cx
        :cy        cy
        :r         (dec m)}]))
 
 
 (defn bug [ci]
-  (let [m  (/ CELL-SIZE 2)
+  (let [m  (/ WIDTH 2)
         cx (+ (pos-x ci) m)
         cy (+ (pos-y ci) m)]
     [:circle
       {:className "bug"
-       :width     CELL-SIZE
-       :height    CELL-SIZE
+       :width     WIDTH
+       :height    WIDTH
        :cx        cx
        :cy        cy
        :r         (- m 3)
@@ -82,22 +92,22 @@
 
    [:rect {
       :className "cell-rect"
-      :width     CELL-SIZE
-      :height    CELL-SIZE
+      :width     WIDTH
+      :height    WIDTH
       :x         (pos-x ci)
       :y         (pos-y ci)} ]
 
-    (if has-bug (bug ci))
+   (if has-fruit (fruit ci))
 
-    (if has-fruit (fruit ci)) ])
+   (if has-bug (bug ci))])
 
 
 (defn field [bug fruit]
   [:svg {:className "field"
-         :width (* FIELD-SIZE CELL-SIZE)
-         :height (* FIELD-SIZE CELL-SIZE)}
+         :width (* SIZE WIDTH)
+         :height (* SIZE WIDTH)}
 
-   (for [ci (range (* FIELD-SIZE FIELD-SIZE))]
+   (for [ci (range (* SIZE SIZE))]
       ^{:key ci}
        (cell ci
              :has-fruit (= ci fruit)
