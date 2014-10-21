@@ -1,3 +1,12 @@
 .greeting {
   font-size: 25px;
 }
+
+.chart {
+  border: 1px solid gray;
+}
+
+.dot {
+  fill: steelblue;
+  stroke: white;
+}
