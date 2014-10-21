@@ -7,8 +7,8 @@
 
 ; Constants
 
-(def SIZE 25)
-(def WIDTH 20)
+(def SIZE 9)
+(def WIDTH 40)
 (def KEYS {37 :left 38 :up 39 :right 40 :down})
 
 
