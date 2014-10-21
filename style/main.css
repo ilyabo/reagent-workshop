@@ -8,12 +8,10 @@
   stroke: white;
 }
 
-
-
 .bug {
   fill: black
 }
 
 .fruit {
-  background-color: purple;
+  fill: #d85d1e;
 }
