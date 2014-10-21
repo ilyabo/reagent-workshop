@@ -5,7 +5,7 @@ open:
 
 autocompile:
 	rm -rf target; \
-	lein with-profile dev,srcmap cljsbuild auto client
+	lein with-profile dev cljsbuild auto client
 
 dist:
 	rm -rf target  && \
