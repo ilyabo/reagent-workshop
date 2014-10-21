@@ -6,16 +6,16 @@
 
 
 (def app-state
-  (reagent/atom {
-     :message "Hello, world!"
-     }))
+  (reagent/atom { :name "world" }))
 
+
+(defn greeting-component [name]
+  [:div {:className "greeting"} (str "Hello, " name "!")])
 
 (defn main-view []
-  [:div {:className "greeting"}
-   (:message @app-state)])
+  [:div {:className "main-view"}
+   [greeting-component (:name @app-state)]])
 
 
 (defn ^:export run []
-  (reagent/render-component [main-view]
-                              (.-body js/document)))
+  (reagent/render-component [main-view] (.-body js/document)))
