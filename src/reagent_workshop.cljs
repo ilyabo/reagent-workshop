@@ -5,54 +5,80 @@
 (enable-console-print!)
 
 
-(let [size 11]
+; Constants
+
+(def field-size 25)
+(def num-cells (* field-size field-size))
+(def cell-size 20)
+
+
+
+; App state
 
 (def app-state
   (reagent/atom {
-      :size size
-      :fruit [(rand-int size) (rand-int size)]
-      :bug [(quot size 2) (quot size 2)]})))
+      :bug (quot num-cells 2)
+      :fruit nil }))
+
+
+(defn spawn-new-fruit! []
+  (swap! app-state :fruit (rand-pos)))
 
 
 
+(defn tick []
+  )
 
 
-;(defn spawn-new-fruit! []
-;  (swap! app-state :fruit (rand-pos)))
+; Helpers
+
+(defn pos-x [ci]
+  (* (rem ci field-size) cell-size))
+
+(defn pos-y [ci]
+  (* (quot ci field-size) cell-size))
 
 
+; Views
+
+(defn bug [ci]
+  (let [m  (/ cell-size 2)
+        r  (- m 3)]
+    [:circle
+      {:className "bug"
+       :width     cell-size
+       :height    cell-size
+       :cx        (+ (pos-x ci) m)
+       :cy        (+ (pos-y ci) m)
+       :r         r}]))
 
 
+(defn cell [ci & {:keys [has-bug has-fruit]}]
+  [:g { :className "cell" }
 
-(defn bug-view []
-  [:div {:className "field__cell bug"}])
+   [:rect {
+      :className "cell-rect"
+      :width     cell-size
+      :height    cell-size
+      :x         (pos-x ci)
+      :y         (pos-y ci)} ]
+
+    (if has-bug (bug ci))])
 
 
+(defn field [bug fruit]
+  [:svg {:className "field"
+         :width (* field-size cell-size)
+         :height (* field-size cell-size)}
 
-(defn fruit-view []
-  [:div {:className "field__cell fruit"}])
+   (for [ci (range (* field-size field-size))]
+      ^{:key ci}
+       (cell ci :has-bug (= ci bug) :has-fruit (= ci fruit)))])
 
-(defn cell-view [i j]
-  [:div {:className "field__cell"}])
-
-
-(defn field-view [size bug-pos fruit-pos]
-  [:div {:className "field"}
-   (for [i (range size)]
-     ^{:key (:name i)}
-     [:div {:className "field__row"}
-      (for [j (range size)]
-        ^{:key (:name j)}
-        (cond
-          (= bug-pos [i j]) [bug-view]
-          (= fruit-pos [i j]) [fruit-view]
-         :else [cell-view i j])
-        )])])
 
 (defn main-view []
   [:div {:className "app"}
-   [field-view
-    (:size @app-state)
+   [field
     (:bug @app-state)
     (:fruit @app-state)]])
 
